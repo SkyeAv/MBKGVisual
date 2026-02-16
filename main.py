@@ -142,9 +142,9 @@ def mkvis(G: nx.Graph, out: Path) -> None:
   )
 
   nt.repulsion(
-    node_distance=175,      # increase to spread nodes more
-    central_gravity=0.30,    # lower -> less "pull to center"
-    spring_length=100,      # longer edges -> more space
+    node_distance=175,
+    central_gravity=0.30,
+    spring_length=100,
     spring_strength=0.020,
     damping=0.70
   )
@@ -155,7 +155,7 @@ def mkvis(G: nx.Graph, out: Path) -> None:
 def main(
   edges: Path = Path("./EDGES.tsv.zst"),
   nodes: Path = Path("./NODES.tsv.zst"),
-  out: Path = Path("./GRAPH.html")
+  out: Path = Path("./index.html")
 ) -> None:
   edf: pl.DataFrame = read_tsv(edges)
   edf = is_sig(edf)
