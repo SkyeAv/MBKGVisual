@@ -1,4 +1,3 @@
-from networkx.algorithms.bipartite import color
 from pyvis.network import Network
 from typing import Optional
 from backports import zstd
@@ -6,7 +5,6 @@ from pathlib import Path
 import networkx as nx
 import polars as pl
 import pandas as pd
-from sqlalchemy.sql.functions import annotation
 
 def read_tsv(p: Path) -> pl.DataFrame:
   with zstd.open(p, "rb") as f:
