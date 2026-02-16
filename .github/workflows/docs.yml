@@ -14,9 +14,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
       - name: Install dependencies
-        run: pip install numpy==1.24.3 pandas==1.5.3 plotly networkx polars pyarrow backports.zstd scipy littleballoffur
+        run: pip install plotly networkx polars pandas pyarrow backports.zstd scipy
       - name: Generate Graph HTML
         run: python3 ./main.py
       - name: Deploy to GitHub Pages
