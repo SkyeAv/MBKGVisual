@@ -93,12 +93,12 @@ def mkvisual(G: nx.Graph, out: Path) -> None:
     attrs: dict[str, Any] = edge[2]
     hover: str = f"<b>{edge[0]} → {edge[1]}</b><br>"
 
-    hover += f"Predicate: {attrs["predicate"]}<br>"
-    hover += f"Publication: {attrs["publication"]}<br>"
-    hover += f"P Value: {attrs["p_value"]}<br>"
-    hover += f"FDR: {attrs["multiple_testing_correction_method"]}<br>"
-    hover += f"Relationship Strength: {attrs["relationship_strength"]}<br>"
-    hover += f"Relationship Type: {attrs["assertion_method"]}"
+    hover += f"Predicate: {attrs['predicate']}<br>"
+    hover += f"Publication: {attrs['publication']}<br>"
+    hover += f"P Value: {attrs['p_value']}<br>"
+    hover += f"FDR: {attrs['multiple_testing_correction_method']}<br>"
+    hover += f"Relationship Strength: {attrs['relationship_strength']}<br>"
+    hover += f"Relationship Type: {attrs['assertion_method']}"
 
     escatter: object = go.Scattergl(
       x=[x0, x1, None],
