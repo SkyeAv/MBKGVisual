@@ -1,4 +1,7 @@
 *AGENTS.md
+*CLAUDE.md
 *.opencode/
 *.claude/
 *__pycache__/
+*lib/
+*docs/
