@@ -1,3 +1,4 @@
+from networkx.algorithms.bipartite import color
 from pyvis.network import Network
 from typing import Optional
 from backports import zstd
@@ -5,23 +6,7 @@ from pathlib import Path
 import networkx as nx
 import polars as pl
 import pandas as pd
-
-def catcolor(cat: str) -> str:
-  cmap: dict[str, str] = {
-    "biolink:OrganismTaxon": "#2ecc71",
-    "biolink:PopulationOfIndividualOrganisms": "#27ae60",
-    "biolink:Gene": "#3498db",
-    "biolink:GeneFamily": "#2980b9",
-    "biolink:Protein": "#1abc9c",
-    "biolink:Polypeptide": "#16a085",
-    "biolink:ChemicalEntity": "#e67e22",
-    "biolink:SmallMolecule": "#d35400",
-    "biolink:MolecularEntity": "#f39c12",
-    "biolink:BiologicalProcess": "#9b59b6",
-    "biolink:MolecularActivity": "#8e44ad",
-    "biolink:Phenomenon": "#a569bd",
-  }
-  return cmap.get(cat, "#95a5a6")
+from sqlalchemy.sql.functions import annotation
 
 def read_tsv(p: Path) -> pl.DataFrame:
   with zstd.open(p, "rb") as f:
@@ -31,6 +16,7 @@ def is_sig(df: pl.DataFrame) -> pl.DataFrame:
   return df.filter(pl.col("significant") == "YES")
 
 def sanitize(ndf: pl.DataFrame, edf: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+  # ? Removes hard to interpret edges from sample visualization
   ndf = ndf.filter(~pl.col("name").is_in({"4", "3", "2", "1"}))
   edf = edf.filter(~pl.col("subject_name").is_in({"4", "3", "2", "1"}))
   edf = edf.filter(~pl.col("object_name").is_in({"4", "3", "2", "1"}))
@@ -38,9 +24,27 @@ def sanitize(ndf: pl.DataFrame, edf: pl.DataFrame) -> tuple[pl.DataFrame, pl.Dat
   return (ndf, edf)
 
 def is_directed(df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+  # ? Separates directed edges
   directed: pl.DataFrame = df.filter(pl.col("predicate") == "biolink:affects")
   undirected: pl.DataFrame = df.filter(pl.col("predicate") != "biolink:affects")
   return (directed, undirected)
+
+CMAP: dict[str, str] = {
+  "biolink:OrganismTaxon": "#2ecc71",
+  "biolink:PopulationOfIndividualOrganisms": "#27ae60",
+  "biolink:Gene": "#3498db",
+  "biolink:GeneFamily": "#2980b9",
+  "biolink:Protein": "#1abc9c",
+  "biolink:Polypeptide": "#16a085",
+  "biolink:ChemicalEntity": "#e67e22",
+  "biolink:SmallMolecule": "#d35400",
+  "biolink:MolecularEntity": "#f39c12",
+  "biolink:BiologicalProcess": "#9b59b6",
+  "biolink:MolecularActivity": "#8e44ad",
+  "biolink:Phenomenon": "#a569bd"
+}
+
+EDGE_COLOR: str = "rgba(169,169,169,0.2)"
 
 def mkgraph(
   edfd: tuple[pl.DataFrame, pl.DataFrame],
@@ -52,34 +56,57 @@ def mkgraph(
   for _, row in npd.iterrows():
     G.add_node(
       row["name"],  # pyright: ignore
-      id=row["id"],  # pyright: ignore
-      category=row["category"],  # pyright: ignore
-      taxon=row["taxon"],  # pyright: ignore
-      color=catcolor(row["category"])  # pyright: ignore
+      color=CMAP.get(row["category"], "#f1c40f"),  # pyright: ignore
+      title=f"({row["id"]}, {row["category"]}, {row["taxon"]})" if row["taxon"] != "NA" else f"({row["id"]}, {row["category"]})"
     )
 
   edpl, eupl = edfd
-  edges: dict[tuple[str, str], dict[str, object]] = {}
-
-  def add_edge(subj: str, obj: str, pred: str, pval: str) -> None:
-    key: tuple[str, str] = (subj, obj)
-    pv: float = float(pval) if pval and pval != "NA" else 1.0
-    if key not in edges or pv < edges[key]["p_value"]:  # pyright: ignore
-      edges[key] = {"predicate": pred, "p_value": pv, "count": 1}
-    else:
-      edges[key]["count"] += 1  # pyright: ignore
-
   edpd: pd.DataFrame = edpl.to_pandas()
   for _, row in edpd.iterrows():
-    add_edge(row["subject_name"], row["object_name"], row["predicate"], row["p_value"])  # pyright: ignore
+    pclause: str = f"p={row["p_value"]}" if row["p_value"] != "NA" else ""
+    sclause: str = f", {row['relationship_strength']}" if row["relationship_strength"] != "NA" else ""
+    if pclause != "" and sclause != "":
+      annotation: str = f" ({sclause}, {pclause})"
+    elif pclause == "" and sclause != "":
+      annotation = f" ({sclause})"
+    elif pclause != "" and sclause == "":
+      annotation = f" ({pclause})"
+    else:
+      annotation = ""
+
+    G.add_edge(
+      row["subject_name"],
+      row["object_name"],
+      title=f"({row["publication"]}) {row["predicate"]}{annotation}",
+      color=EDGE_COLOR
+    )
 
   eupd: pd.DataFrame = eupl.to_pandas()
   for _, row in eupd.iterrows():
-    add_edge(row["subject_name"], row["object_name"], row["predicate"], row["p_value"])  # pyright: ignore
-    add_edge(row["object_name"], row["subject_name"], row["predicate"], row["p_value"])  # pyright: ignore
+    pclause = f"p={row["p_value"]}" if row["p_value"] != "NA" else ""
+    sclause = f"{row['relationship_strength']}" if row["relationship_strength"] != "NA" else ""
+    if pclause != "" and sclause != "":
+      annotation = f" ({sclause}, {pclause})"
+    elif pclause == "" and sclause != "":
+      annotation = f" ({sclause})"
+    elif pclause != "" and sclause == "":
+      annotation = f" ({pclause})"
+    else:
+      annotation = ""
 
-  for (subj, obj), attrs in edges.items():
-    G.add_edge(subj, obj, **attrs)
+    G.add_edge(
+      row["subject_name"],
+      row["object_name"],
+      title=f"({row["publication"]}) {row["predicate"]}{annotation}",
+      color=EDGE_COLOR
+    )
+    # * Symetrical edge for undirected edges
+    G.add_edge(
+      row["object_name"],
+      row["subject_name"],
+      title=f"({row["publication"]}) {row["predicate"]}{annotation}",
+      color=EDGE_COLOR
+    )
 
   return G
 
@@ -109,11 +136,19 @@ def sampler(G: nx.DiGraph) -> nx.DiGraph:
 
 def mkvis(G: nx.Graph, out: Path) -> None:
   nt: object = Network(
-    height="750px",
-    width="100%",
+    height="100vh",
+    width="100vw",
     directed=True,
     bgcolor="#222222",
     font_color="white"  # pyright: ignore
+  )
+
+  nt.repulsion(
+    node_distance=175,      # increase to spread nodes more
+    central_gravity=0.30,    # lower -> less "pull to center"
+    spring_length=100,      # longer edges -> more space
+    spring_strength=0.020,
+    damping=0.70
   )
 
   nt.from_nx(G)
