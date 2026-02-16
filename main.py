@@ -134,8 +134,8 @@ def mkvisual(G: nx.Graph, out: Path) -> None:
   fig.write_html(out)
 
 def main(
-  edges: Path = Path("./MICROBIOME_KG_2.1.0_edges.tsv"),
-  nodes: Path = Path("./MICROBIOME_KG_2.1.0_nodes.tsv"),
+  edges: Path = Path("./MICROBIOME_KG_2.1.0_edges.tsv.zst"),
+  nodes: Path = Path("./MICROBIOME_KG_2.1.0_nodes.tsv.zst"),
   out: Path = Path("./GRAPH-VIS.html")
 ) -> None:
   edf: pl.DataFrame = read_tsv(edges)
