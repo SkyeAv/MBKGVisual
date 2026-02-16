@@ -62,7 +62,7 @@ def mkgraph(
   edpd: pd.DataFrame = edpl.to_pandas()
   for _, row in edpd.iterrows():
     pclause: str = f"p={row["p_value"]}" if row["p_value"] != "NA" else ""
-    sclause: str = f", {row['relationship_strength']}" if row["relationship_strength"] != "NA" else ""
+    sclause: str = f"{row['relationship_strength']}" if row["relationship_strength"] != "NA" else ""
     if pclause != "" and sclause != "":
       annotation: str = f" ({sclause}, {pclause})"
     elif pclause == "" and sclause != "":
