@@ -78,7 +78,7 @@ def mkgraph(
   return G
 
 def sampler(G: nx.Graph) -> nx.Graph:
-  nnodes: int = round(G.number_of_nodes())
+  nnodes: int = round(0.25 * G.number_of_nodes())
   S: object = PageRankBasedSampler(number_of_nodes=nnodes)
   return S.sample(G)
 
