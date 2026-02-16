@@ -20,7 +20,7 @@ Run Visualization
 python3 ./main.py
 ```
 
-This reads `./NODES.tsv.zst` and `./EDGES.tsv.zst` and outputs `./GRAPH.html`.
+This reads `./NODES.tsv.zst` and `./EDGES.tsv.zst` and outputs `./index.html`.
 
 ## Architecture
 
