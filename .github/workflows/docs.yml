@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install plotly networkx polars pyarrow pandas>=2.0.0 backports.zstd scipy littleballoffur
+        run: pip install numpy==1.24.3 pandas==1.5.3 plotly networkx polars pyarrow backports.zstd scipy littleballoffur
       - name: Generate Graph HTML
         run: python3 ./main.py
       - name: Deploy to GitHub Pages
