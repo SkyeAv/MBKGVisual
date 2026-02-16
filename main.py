@@ -45,60 +45,45 @@ def is_directed(df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
 def mkgraph(
   edfd: tuple[pl.DataFrame, pl.DataFrame],
   ndf: pl.DataFrame
-) -> nx.Graph:
-  G: nx.Graph = nx.MultiDiGraph()
+) -> nx.DiGraph:
+  G: nx.DiGraph = nx.DiGraph()
 
   npd: pd.DataFrame = ndf.to_pandas()
   for _, row in npd.iterrows():
     G.add_node(
       row["name"],
-      name=row["name"],
-      curie=row["id"],
-      category=row["category"]
+      id=row["id"],
+      category=row["category"],
+      taxon=row["taxon"],
+      color=catcolor(row["category"])
     )
 
   edpl, eupl = edfd
+  edges: dict[tuple[str, str], dict[str, object]] = {}
+
+  def add_edge(subj: str, obj: str, pred: str, pval: str) -> None:
+    key: tuple[str, str] = (subj, obj)
+    pv: float = float(pval) if pval and pval != "NA" else 1.0
+    if key not in edges or pv < edges[key]["p_value"]:
+      edges[key] = {"predicate": pred, "p_value": pv, "count": 1}
+    else:
+      edges[key]["count"] += 1  # pyright: ignore
 
   edpd: pd.DataFrame = edpl.to_pandas()
   for _, row in edpd.iterrows():
-    G.add_edge(
-      row["subject_name"],
-      row["object_name"],
-      predicate=row["predicate"],
-      publication=row["publication"],
-      p_value=row["p_value"],
-      multiple_testing_correction_method=row["multiple_testing_correction_method"],
-      relationship_strength=row["relationship_strength"],
-      assertion_method=row["assertion_method"]
-    )
+    add_edge(row["subject_name"], row["object_name"], row["predicate"], row["p_value"])
 
   eupd: pd.DataFrame = eupl.to_pandas()
   for _, row in eupd.iterrows():
-    G.add_edge(
-      row["subject_name"],
-      row["object_name"],
-      predicate=row["predicate"],
-      publication=row["publication"],
-      p_value=row["p_value"],
-      multiple_testing_correction_method=row["multiple_testing_correction_method"],
-      relationship_strength=row["relationship_strength"],
-      assertion_method=row["assertion_method"]
-    )
-    # * Symetrical edge for undirected edges
-    G.add_edge(
-      row["object_name"],
-      row["subject_name"],
-      predicate=row["predicate"],
-      publication=row["publication"],
-      p_value=row["p_value"],
-      multiple_testing_correction_method=row["multiple_testing_correction_method"],
-      relationship_strength=row["relationship_strength"],
-      assertion_method=row["assertion_method"]
-    )
+    add_edge(row["subject_name"], row["object_name"], row["predicate"], row["p_value"])
+    add_edge(row["object_name"], row["subject_name"], row["predicate"], row["p_value"])
+
+  for (subj, obj), attrs in edges.items():
+    G.add_edge(subj, obj, **attrs)
 
   return G
 
-def sampler(G: nx.Graph) -> nx.Graph:
+def sampler(G: nx.DiGraph) -> nx.DiGraph:
   nnodes: int = round(0.001 * G.number_of_nodes())
 
   seed: object = max(G.degree(), key=(lambda x: x[1]))[0]  # pyright: ignore
@@ -147,7 +132,7 @@ def main(
 
   edfd: tuple[pl.DataFrame, pl.DataFrame] = is_directed(edf)
 
-  G: nx.Graph = mkgraph(edfd, ndf)
+  G: nx.DiGraph = mkgraph(edfd, ndf)
   G = sampler(G)
 
   mkvis(G, out)
