@@ -120,6 +120,11 @@ def main(
 
   edfu: pl.DataFrame = get_undirected(edf)
 
+  usubject: pl.Series = edfu.select(pl.col("subject")).to_series()
+  uobject: pl.Series = edfu.select(pl.col("object")).to_series()
+  unodes: pl.Series = pl.concat((usubject, uobject)).unique()
+  ndf = ndf.filter((pl.col("id").is_in(unodes)))
+
   G: nx.Graph = mkgraph(edfu, ndf)
   G = sampler(G)
   mkvisual(G, out)
