@@ -14,16 +14,14 @@ def read_tsv(p: Path) -> pl.DataFrame:
 def is_sig(df: pl.DataFrame) -> pl.DataFrame:
   return df.filter(pl.col("significant") == "YES")
 
-def is_directed(df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
-  directed: pl.DataFrame = df.filter(pl.col("predicate") == "biolink:affects")
-  undirected: pl.DataFrame = df.filter(pl.col("predicate") != "biolink:affects")
-  return (directed, undirected)
+def get_undirected(df: pl.DataFrame) -> pl.DataFrame:
+  return df.filter(pl.col("predicate") != "biolink:affects")
 
 def mkgraph(
-  edfd: tuple[pl.DataFrame, pl.DataFrame],
+  edfu: pl.DataFrame,
   ndf: pl.DataFrame
 ) -> nx.Graph:
-  G: nx.Graph = nx.MultiDiGraph()
+  G: nx.Graph = nx.MultiGraph()
 
   npd: pd.DataFrame = ndf.to_pandas()
   for _, row in npd.iterrows():
@@ -33,41 +31,12 @@ def mkgraph(
       category=row["category"]
     )
 
-  edpl, eupl = edfd
-
-  edpd: pd.DataFrame = edpl.to_pandas()
+  edpd: pd.DataFrame = edfu.to_pandas()
   for _, row in edpd.iterrows():
     G.add_edge(
       row["subject"],
       row["object"],
       predicate=row["predicate"],
-      directed=True,
-      publication=row["publication"],
-      p_value=row["p_value"],
-      multiple_testing_correction_method=row["multiple_testing_correction_method"],
-      relationship_strength=row["relationship_strength"],
-      assertion_method=row["assertion_method"]
-    )
-
-  eupd: pd.DataFrame = eupl.to_pandas()
-  for _, row in eupd.iterrows():
-    G.add_edge(
-      row["subject"],
-      row["object"],
-      predicate=row["predicate"],
-      directed=True,
-      publication=row["publication"],
-      p_value=row["p_value"],
-      multiple_testing_correction_method=row["multiple_testing_correction_method"],
-      relationship_strength=row["relationship_strength"],
-      assertion_method=row["assertion_method"]
-    )
-    # Symetrical edge for undirected edges
-    G.add_edge(
-      row["object"],
-      row["subject"],
-      predicate=row["predicate"],
-      directed=True,
       publication=row["publication"],
       p_value=row["p_value"],
       multiple_testing_correction_method=row["multiple_testing_correction_method"],
@@ -149,9 +118,9 @@ def main(
 
   ndf: pl.DataFrame = read_tsv(nodes)
 
-  edfd: tuple[pl.DataFrame, pl.DataFrame] = is_directed(edf)
+  edfu: pl.DataFrame = get_undirected(edf)
 
-  G: nx.Graph = mkgraph(edfd, ndf)
+  G: nx.Graph = mkgraph(edfu, ndf)
   G = sampler(G)
   mkvisual(G, out)
 
