@@ -3,3 +3,5 @@
 *.opencode/
 *.claude/
 *__pycache__/
+*lib/
+*docs/
