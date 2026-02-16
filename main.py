@@ -51,11 +51,11 @@ def mkgraph(
   npd: pd.DataFrame = ndf.to_pandas()
   for _, row in npd.iterrows():
     G.add_node(
-      row["name"],
-      id=row["id"],
-      category=row["category"],
-      taxon=row["taxon"],
-      color=catcolor(row["category"])
+      row["name"],  # pyright: ignore
+      id=row["id"],  # pyright: ignore
+      category=row["category"],  # pyright: ignore
+      taxon=row["taxon"],  # pyright: ignore
+      color=catcolor(row["category"])  # pyright: ignore
     )
 
   edpl, eupl = edfd
@@ -64,19 +64,19 @@ def mkgraph(
   def add_edge(subj: str, obj: str, pred: str, pval: str) -> None:
     key: tuple[str, str] = (subj, obj)
     pv: float = float(pval) if pval and pval != "NA" else 1.0
-    if key not in edges or pv < edges[key]["p_value"]:
+    if key not in edges or pv < edges[key]["p_value"]:  # pyright: ignore
       edges[key] = {"predicate": pred, "p_value": pv, "count": 1}
     else:
       edges[key]["count"] += 1  # pyright: ignore
 
   edpd: pd.DataFrame = edpl.to_pandas()
   for _, row in edpd.iterrows():
-    add_edge(row["subject_name"], row["object_name"], row["predicate"], row["p_value"])
+    add_edge(row["subject_name"], row["object_name"], row["predicate"], row["p_value"])  # pyright: ignore
 
   eupd: pd.DataFrame = eupl.to_pandas()
   for _, row in eupd.iterrows():
-    add_edge(row["subject_name"], row["object_name"], row["predicate"], row["p_value"])
-    add_edge(row["object_name"], row["subject_name"], row["predicate"], row["p_value"])
+    add_edge(row["subject_name"], row["object_name"], row["predicate"], row["p_value"])  # pyright: ignore
+    add_edge(row["object_name"], row["subject_name"], row["predicate"], row["p_value"])  # pyright: ignore
 
   for (subj, obj), attrs in edges.items():
     G.add_edge(subj, obj, **attrs)
@@ -105,7 +105,7 @@ def sampler(G: nx.DiGraph) -> nx.DiGraph:
     next_node: object = max(candidates, key=(lambda x: degrees[x]))  # pyright: ignore
     sampled |= {next_node}
   
-  return G.subgraph(sampled).copy()
+  return G.subgraph(sampled).copy()  # pyright: ignore
 
 def mkvis(G: nx.Graph, out: Path) -> None:
   nt: object = Network(
