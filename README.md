@@ -6,7 +6,9 @@
 
 MicrobiomeKG Visualization Tool. MBKGVisual reads compressed graph data (NODES and EDGES TSV files), builds a NetworkX graph, samples it using degree-based neighbor expansion (0.1% of nodes), and generates an interactive HTML visualization using Pyvis.
 
-[Live Demo](https://skyeav.github.io/MBKGVisual/)
+## Live Demo
+
+[GitHub Pages Deployment](https://skyeav.github.io/MBKGVisual/)
 
 ## Usage
 
