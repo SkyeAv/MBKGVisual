@@ -1,3 +1,4 @@
+from littleballoffur import PageRankBasedSampler
 import plotly.graph_objects as go
 from backports import zstd
 from pathlib import Path
@@ -76,6 +77,11 @@ def mkgraph(
 
   return G
 
+def sampler(G: nx.Graph) -> nx.Graph:
+  nnodes: int = round(G.number_of_nodes())
+  S: object = PageRankBasedSampler(number_of_nodes=nnodes)
+  return S.sample(G)
+
 def mkvisual(G: nx.Graph, out: Path) -> None:
   pos: object = nx.spring_layout(G, k=0.5, iterations=20)
 
@@ -134,9 +140,9 @@ def mkvisual(G: nx.Graph, out: Path) -> None:
   fig.write_html(out)
 
 def main(
-  edges: Path = Path("./MICROBIOME_KG_2.1.0_edges.tsv.zst"),
-  nodes: Path = Path("./MICROBIOME_KG_2.1.0_nodes.tsv.zst"),
-  out: Path = Path("./GRAPH-VIS.html")
+  edges: Path = Path("./EDGES.tsv.zst"),
+  nodes: Path = Path("./NODES.tsv.zst"),
+  out: Path = Path("./GRAPH.html")
 ) -> None:
   edf: pl.DataFrame = read_tsv(edges)
   edf = is_sig(edf)
@@ -146,6 +152,7 @@ def main(
   edfd: tuple[pl.DataFrame, pl.DataFrame] = is_directed(edf)
 
   G: nx.Graph = mkgraph(edfd, ndf)
+  G = sampler(G)
   mkvisual(G, out)
 
 if __name__ == "__main__":
