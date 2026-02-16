@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install dependencies
-        run: pip install plotly networkx polars pandas
+        run: pip install plotly networkx polars pandas backports.zstd
       - name: Generate Graph HTML
         run: python3 ./main.py
       - name: Deploy to GitHub Pages

@@ -1,4 +1,5 @@
 import plotly.graph_objects as go
+from backports import zstd
 from pathlib import Path
 from typing import Any
 import networkx as nx
@@ -6,7 +7,8 @@ import polars as pl
 import pandas as pd
 
 def read_tsv(p: Path) -> pl.DataFrame:
-  return pl.read_csv(p, separator="\t", has_header=True, infer_schema=False)
+  with zstd.open(p, "rb") as f:
+    return pl.read_csv(f.read(), separator="\t", has_header=True, infer_schema=False)
 
 def is_sig(df: pl.DataFrame) -> pl.DataFrame:
   return df.filter(pl.col("significant") == "YES")
